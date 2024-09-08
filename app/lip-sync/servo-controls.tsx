@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import AmplitudeCanvas from "./amplitudeCanvas";
 import SerialContext from "../contexts/serial";
 import { SimpleEvent } from "../types";
@@ -8,12 +8,13 @@ import { useInterval } from "react-use";
 import WebSerialConditional from "../components/webserial-conditional";
 
 interface ServoControlsProps {
-  servoSequence: Array<SimpleEvent>;
-  audioPlay: Promise<void>;
+  filteredData: Array<number>;
+  audioSrc: string | null;
+  audioPlay: () => Promise<void>;
   audioSeek: (time: number) => void;
 }
 
-export default function ServoControls() {
+export default function ServoControls(props: ServoControlsProps): JSX.Element {
   const [channel, setChannel] = useState<number>(-1);
   const [minPulse, setMinPulse] = useState<number>(0);
   const [maxPulse, setMaxPulse] = useState<number>(2500);
@@ -21,6 +22,27 @@ export default function ServoControls() {
   const [servoSequence, setServoSequence] = useState<Array<SimpleEvent>>([]);
   const [servoPlaybackOffset, setServoPlaybackOffset] = useState<number>(-1);
   const serialContext = useContext(SerialContext);
+
+  useEffect(() => {
+    console.log("ServoControls re-rendering servo sequence");
+    if (!props.filteredData || props.filteredData.length === 0) {
+      console.log("ServoControls filteredData is empty");
+      setServoSequence([]);
+    } else {
+      const servoSequence: Array<SimpleEvent> = [];
+      let time = 0;
+      let countOverMin = 0;
+      const servoRange = maxPulse - minPulse;
+      for (let i = 0; i < props.filteredData.length; i++) {
+        const pulseWidth = Math.floor((props.filteredData[i] * servoRange) + minPulse);
+        (pulseWidth > minPulse) && countOverMin++;
+        time = i * 500; // alternative: time += 500; // Each sample is 500ms (see filterData in audio-functions.ts)
+        servoSequence.push({ pulseWidth, sinceStart: time });
+      }
+      setServoSequence(servoSequence);
+      console.log(`ServoControls DONE re-rendering servo sequence. There are ${servoSequence.length} events of which ${countOverMin} are over minimum.`);
+    }
+  }, [maxPulse, minPulse, props.filteredData]);
 
   useInterval(
     () => {

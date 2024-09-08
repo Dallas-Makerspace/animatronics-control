@@ -5,6 +5,7 @@ import AmplitudeCanvas from "./amplitudeCanvas";
 import SerialContext from "../contexts/serial";
 import { SimpleEvent } from "../types";
 import { useInterval } from "react-use";
+import WebSerialConditional from "../components/webserial-conditional";
 
 interface ServoControlsProps {
   servoSequence: Array<SimpleEvent>;
@@ -41,7 +42,7 @@ export default function ServoControls() {
   );
   
   return (
-    <>
+    <WebSerialConditional getStartedMessage="to play this lip sync on a servo.">
       <div className="flex">
         <div>
           <input type="range" id="channel" min="-1" max="31" value={channel} onChange={(e) => setChannel(Number(e.target.value))} step="1" />
@@ -60,6 +61,6 @@ export default function ServoControls() {
           <label htmlFor="servo-position">Position {pulseWidth}ms</label>
         </div>
       </div>
-    </>
-  );
+    </WebSerialConditional>
+  )
 }

@@ -4,6 +4,7 @@ import ServoInput from "./ServoInput";
 import { Servo } from "../types";
 import SerialContext from "../contexts/serial";
 import { Button } from "@nextui-org/button"
+import WebSerialConditional from "../components/webserial-conditional";
 
 const getNewServo = (): Servo => {
   const servo: Servo = {
@@ -79,35 +80,15 @@ export default function ServoPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      { live ? serialContext.hasWebSerial ? (
-        <div>
-          {serialContext.connected ? (
-            <div>
-              <div>Connected!</div>
-              {servoInputs}        
-            </div>
-          ) : (
-            <div>Please connect to a servo controller on the serial options page to get started.</div>
-          )}
-        </div>
-      ) : ( // below is rendered if Web Serial is not supported
-        <div id="notSupported">
-          Sorry, <b>Web Serial</b> is not supported on this device, make sure you&apos;re running
-          Chrome 78 or later and have enabled the <code>#enable-experimental-web-platform-features</code>
-          &nbsp;flag in <code>chrome://flags</code>
-        </div>
-      ) : // below is rendered if live is false
-      (
-        <div>
-          <div>
-            Offline mode
-          </div>
-          {servoInputs}
-        </div>
-      )}
       <div>
-        <Button onClick={() => setLive(!live)} isDisabled={!serialContext.connected}>{live ? "Stop" : "Start"} Live Mode</Button>
+        <div>{ live ? 'Connected!' : 'Offline mode' }</div>
+        {servoInputs}        
       </div>
+      <WebSerialConditional>
+        <div>
+          <Button onClick={() => setLive(!live)} isDisabled={!serialContext.connected}>{live ? "Stop" : "Start"} Live Mode</Button>
+        </div>
+      </WebSerialConditional>
       <div className="bg-red">
         <h2>Servos</h2>
         <pre>{JSON.stringify(servos, null, 2)}</pre>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createRef, useEffect, useState } from "react";
 
 export type AudioFilePickerProps = {
   onAudioFileChange: (newSource: string) => void;
@@ -9,6 +9,9 @@ export default function AudioFilePicker(props: AudioFilePickerProps) {
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
   const [onAudioFileChange, setOnAudioFileChange] = useState<((newSource: string) => void) | null>(null);
+  const audio = createRef<HTMLAudioElement>();
+
+  // let audio: HTMLAudioElement | null = null; 
 
   useEffect(() => {
     const newOnAudioFileChange = props.onAudioFileChange;
@@ -22,6 +25,11 @@ export default function AudioFilePicker(props: AudioFilePickerProps) {
     // ??? const audio = document.getElementById('lip-sync-audio') as HTMLAudioElement;
     if (event.target.files !== null) {
       // ??? audio.src = URL.createObjectURL(event.target.files[0]);
+      if (audio.current != null) {
+        audio.current!.src = URL.createObjectURL(event.target.files[0]);
+      } else {
+        console.error('Audio ref is null when trying to update source');
+      }
       // Calculate total size
       const numberOfBytes = event.target.files[0].size;
       // Approximate to the closest prefixed unit
@@ -73,7 +81,7 @@ export default function AudioFilePicker(props: AudioFilePickerProps) {
         <label htmlFor="fileSize">Size:</label>{" "}
         <output id="fileSize">n/a</output>
       </form>
-      <audio controls id='lip-sync-audio' onPlay={onAudioPlay}></audio>
+      <audio controls id='lip-sync-audio' onPlay={onAudioPlay} ref={audio}></audio>
     </>
   );
 }

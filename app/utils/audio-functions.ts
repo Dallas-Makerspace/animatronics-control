@@ -20,13 +20,17 @@
 // const audioContext = new AudioContext();
 
 /**
+ * The size of the sample we average by (in milliseconds)
+ */
+export const sampleSize = 50; 
+
+/**
  * Filters the AudioBuffer retrieved from an external source
  * @param {AudioBuffer} audioBuffer the AudioBuffer from drawAudio()
  * @returns {Array} an array of floating point numbers
  */
 export const filterData = (audioBuffer: AudioBuffer): Array<any> => {
   const rawData = audioBuffer.getChannelData(0); // We only need to work with one channel of data
-  const sampleSize = 500; // the size of the sample we average by (in milliseconds)
   const rawDuration = audioBuffer.duration * 1000; // duration of the audio in milliseconds
   const samples = Math.floor(rawDuration / sampleSize) // 70; // Number of samples we want to have in our final data set
   console.log(`Raw data length: ${rawData.length}; Rate: ${audioBuffer.sampleRate} Hz; Duration: ${rawDuration} s; Samples: ${samples}`);

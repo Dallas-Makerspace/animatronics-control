@@ -1,6 +1,6 @@
 'use client';
 
-import { createElement, createRef, use, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { normalizeData } from "../utils/audio-functions";
 
 /**

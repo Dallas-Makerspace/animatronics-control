@@ -209,7 +209,7 @@ export default function ServoInput(props: ServoInputProps) {
         <label htmlFor="min-position">Min {minPulse}ms</label>
       </div>
       <div>
-        <input type="range" id="max-position" min={minPulse + 1} max="2000" value={maxPulse} onChange={onMaxPulseChange} disabled={channel == -1}/>
+        <input type="range" id="max-position" min={minPulse + 1} max="2500" value={maxPulse} onChange={onMaxPulseChange} disabled={channel == -1}/>
         <label htmlFor="max-position">Max {maxPulse}ms</label>
       </div>
       <div>

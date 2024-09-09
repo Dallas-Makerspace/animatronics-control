@@ -4,15 +4,15 @@ import AmplitudeCanvas from "./amplitudeCanvas";
 import ServoControls from "./servo-controls";
 import AudioFilePicker from "./audio-file-picker";
 import { promiseLog } from "../utils/logging";
-import { filterData } from "../utils/audio-functions";
-import { arrayBuffer } from "stream/consumers";
-import { filter } from "framer-motion/client";
-import { SimpleEvent } from "../types";
+import { defaultServoSequenceOptions, filterData } from "../utils/audio-functions";
+import { SimpleEvent, ServoSequenceOptions } from "../types";
+import ServoSequenceOptionsComponent from "../components/servo-sequence-options";
 
 export default function LipSyncPage() {
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [filteredData, setFilteredData] = useState<Array<number>>([]);
   const [servoSequence, setServoSequence] = useState<Array<SimpleEvent>>([]);
+  // const [servoSequenceOptions, setServoSequenceOptions] = useState<ServoSequenceOptions>(defaultServoSequenceOptions);
 
   const onAudioFileChange = (newSource: string) => {
     const audioContext = new OfflineAudioContext({
@@ -45,8 +45,18 @@ export default function LipSyncPage() {
       <div className="h-flex">
         <AmplitudeCanvas filterData={filteredData}/>
       </div>
+      {/* <div>
+        <ServoSequenceOptionsComponent servoSequenceOptions={servoSequenceOptions} onChange={() => console.error("Not implemented onChange for servoSequenceOptions")} />
+      </div> */}
       <div>
-        <ServoControls filteredData={filteredData} audioSrc={audioSrc} audioPlay={()=> new Promise(() => console.log("TODO: not implemented"))} audioSeek={()=>{}} />
+        <ServoControls 
+          filteredData={filteredData} 
+          audioSrc={audioSrc} 
+          audioPlay={()=> new Promise(() => console.log("TODO: not implemented"))} 
+          audioSeek={()=>{}} 
+          // servoSequenceOptions={servoSequenceOptions}
+          servoSequenceOptionsOnChange={(servoSequenceOptions) => setServoSequenceOptions(servoSequenceOptions)}
+        />
       </div>
     </main>
   );

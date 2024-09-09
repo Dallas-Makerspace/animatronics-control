@@ -1,20 +1,20 @@
 "use client";
 
-import { useContext, useEffect, useState } from "react";
+import { use, useContext, useEffect, useState } from "react";
 import SerialContext from "../contexts/serial";
-import { SimpleEvent } from "../types";
+import { ServoSequenceOptions, SimpleEvent } from "../types";
 import { useInterval } from "react-use";
 import WebSerialConditional from "../components/webserial-conditional";
 import { Button } from "@nextui-org/button";
-import { normalize } from "path";
-import { normalizeData, sampleSize } from "../utils/audio-functions";
-import { start } from "repl";
+import { defaultServoSequenceOptions, generateServoSequence, sampleSize } from "../utils/audio-functions";
 
 interface ServoControlsProps {
   filteredData: Array<number>;
   audioSrc: string | null;
   audioPlay: () => Promise<void>;
   audioSeek: (time: number) => void;
+  servoSequenceOptions: ServoSequenceOptions;
+  servoSequenceOptionsOnChange: (options: ServoSequenceOptions) => void;
 }
 
 export default function ServoControls(props: ServoControlsProps): JSX.Element {
@@ -26,7 +26,27 @@ export default function ServoControls(props: ServoControlsProps): JSX.Element {
   const [servoPlaybackOffset, setServoPlaybackOffset] = useState<number>(-1);
   const [audioPlay, setAudioPlay] = useState<() => Promise<void>>(props.audioPlay);
   const [audioSeek, setAudioSeek] = useState<(time: number) => void>(props.audioSeek);
+  const [inverted, setInverted] = useState<boolean>(true);
+  const [playbackStarted, setPlaybackStarted] = useState<number>(-1);
+  //const [servoSequenceOptions, setServoSequenceOptions] = useState<ServoSequenceOptions>(props.servoSequenceOptions);
+  //const [onChangeServoSequenceOptions, setOnChangeServoSequenceOptions] = useState<(options: ServoSequenceOptions) => void>(props.servoSequenceOptionsOnChange);
   const serialContext = useContext(SerialContext);
+
+  // useEffect(() => {
+  //   let newServoSequenceOptions = {...servoSequenceOptions};
+  //   if (maxPulse) {
+  //     newServoSequenceOptions = {...newServoSequenceOptions, servoCeiling: maxPulse};
+  //   }
+  //   if (minPulse) {
+  //     newServoSequenceOptions = {...newServoSequenceOptions, servoFloor: minPulse};
+  //   }
+  //   if (onChangeServoSequenceOptions) {
+  //     onChangeServoSequenceOptions(newServoSequenceOptions);
+  //   } else {
+  //     console.error("No onChange for servoSequenceOptions in ServoControls, unable to push changes");
+  //     setServoSequenceOptions(newServoSequenceOptions);
+  //   }
+  // }, [maxPulse, minPulse, onChangeServoSequenceOptions, servoSequenceOptions]);
 
   useEffect(() => {
     if (!props.filteredData || props.filteredData.length === 0) {
@@ -34,25 +54,18 @@ export default function ServoControls(props: ServoControlsProps): JSX.Element {
       setServoSequence([]);
     } else {
       console.log("ServoControls re-rendering servo sequence");
-      const servoSequence: Array<SimpleEvent> = [];
-      let time = 0;
-      let countOverMin = 0;
-      let countUnderMax = 0;
-      const servoRange = maxPulse - minPulse;
-      const normalizedData = normalizeData(props.filteredData);
-      const audioSamples = normalizedData;
-      for (let i = 0; i < audioSamples.length; i++) {
-        // const pulseWidth = Math.floor((props.filteredData[i] * servoRange) + minPulse);
-        const pulseWidth = Math.ceil(maxPulse - (audioSamples[i] * servoRange));
-        (pulseWidth > minPulse) && countOverMin++;
-        (pulseWidth < maxPulse) && countUnderMax++;
-        time = i * sampleSize; // alternative: time += 500; // Each sample is 500ms (see filterData in audio-functions.ts)
-        servoSequence.push({ pulseWidth, sinceStart: time });
-      }
-      setServoSequence(servoSequence);
-      console.log(`ServoControls DONE re-rendering servo sequence. There are ${servoSequence.length} events of which ${countOverMin} are over minimum and ${countUnderMax} are under maximum`);
+      const servoSequence = generateServoSequence(props.filteredData, defaultServoSequenceOptions); // servoSequenceOptions);
+      setServoSequence(servoSequence.sequence);
+      // TODO: Publish stats with a callback? servoSequence.stats
     }
-  }, [maxPulse, minPulse, props.filteredData]);
+  }, [inverted, maxPulse, minPulse, props.filteredData]); //, servoSequenceOptions]);
+
+  // useEffect(() => {
+  //   if (props.servoSequenceOptions) {
+  //     console.log("ServoControls updating servoSequenceOptions");
+  //     setServoSequenceOptions(() => props.servoSequenceOptions);
+  //   }
+  // }, [props.servoSequenceOptions]);
 
   useEffect(() => {
     if (props.audioPlay) {
@@ -65,37 +78,68 @@ export default function ServoControls(props: ServoControlsProps): JSX.Element {
     }
   }, [props.audioPlay, props.audioSeek]);
 
+  // useEffect(() => {
+  //   if (props.servoSequenceOptionsOnChange) {
+  //     console.log("ServoControls updating servoSequenceOptionsOnChange");
+  //     setOnChangeServoSequenceOptions(() => props.servoSequenceOptionsOnChange);
+  //   }
+  // }, [onChangeServoSequenceOptions, props.servoSequenceOptionsOnChange]);
+
 
   useInterval(
     () => {
       const index = servoPlaybackOffset;
+      // TODO: Playback stats
+      if (index < 0 || index >= servoSequence.length) {
+        console.log("Servo playback has reached the end of the sequence");
+        setServoPlaybackOffset(-1); // stops the interval
+        return;
+      }
       const pulseWidth = servoSequence[index].pulseWidth;
       const sinceStart = servoSequence[index].sinceStart;
-      console.log(`Playing servo event ${index} at ${sinceStart}ms with pulse width ${pulseWidth}ms`);
+      let nextIndex = index + 1;
+      if(sinceStart % 10000 === 0) { // every 10 seconds
+        const now = Date.now();
+        const elapsed = now - playbackStarted;
+        let delta = sinceStart - elapsed;
+        console.log(`Ten second update: playing servo event ${index} at ${sinceStart}ms; ${elapsed}ms have elapsed (${delta}ms) with pulse width ${pulseWidth}ms`);
+        if (delta > sampleSize) {
+          const deltaSamples = Math.floor(delta / sampleSize);
+          console.error(`Servo playback is ahead by ${delta}ms which exceeds ${sampleSize}ms of the sample size. Cheating back by replaying ${deltaSamples} samples.`);
+          nextIndex = index - deltaSamples;
+        } else if (delta < (sampleSize * -1)) {
+          const deltaSamples = -1 * (Math.floor(delta / sampleSize));
+          console.error(`Servo playback is behind by ${delta}ms which exceeds ${sampleSize}ms of the sample size. Cheating forward by skipping ${deltaSamples} samples.`);
+          nextIndex = index + deltaSamples;
+        }
+      }
+      //??console.log(`Playing servo event ${index} at ${sinceStart}ms with pulse width ${pulseWidth}ms`);
       // Send the servo changes to the servo controller
       const serialMessage = `#${channel}P${pulseWidth}\r`;
       try {
         const enc = new TextEncoder(); // always utf-8
         serialContext.writer?.write(enc.encode(serialMessage));
-        console.log(`Sent serial message: ${serialMessage}`);
+        //??console.log(`Sent serial message: ${serialMessage}`);
       } catch (e) {
         throw new Error(`Failed to send serial message (${serialMessage}): ${e}`);
       }
-      setServoPlaybackOffset(index + 1);
+      setServoPlaybackOffset(nextIndex);
     },
     servoPlaybackOffset === -1 ? null : sampleSize // set interval to match sample size if we have a servoPlaybackOffset
   );
 
   const doPlaySequence = () => {
-    const startAt = 19000;
-    console.log("Playing servo sequence");
-    setServoPlaybackOffset(Math.floor(startAt / sampleSize));
+    const startAt = 0; //240000; // 0; // 19000;
     // TODO: This is hacky!
     const audio = document.getElementById('lip-sync-audio') as HTMLAudioElement;
+    setServoPlaybackOffset(Math.floor(startAt / sampleSize));
     if (audio) {
       // audio.currentTime = 0;
       // audio.play();
       audio.currentTime = startAt / 1000;
+      const now = Date.now();
+      setPlaybackStarted(now);
+      console.log("Playing servo sequence");  
       audio.play();
     } else {
       console.error("No audio element found to play");
@@ -122,7 +166,7 @@ export default function ServoControls(props: ServoControlsProps): JSX.Element {
     try {
       const enc = new TextEncoder(); // always utf-8
       serialContext.writer?.write(enc.encode(serialMessage));
-      console.log(`Sent serial message: ${serialMessage}`);
+      //??console.log(`Sent serial message: ${serialMessage}`);
     } catch (e) {
       throw new Error(`Failed to send serial message (${serialMessage}): ${e}`);
     }

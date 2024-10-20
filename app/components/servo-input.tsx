@@ -1,13 +1,18 @@
 import { useState } from "react"
 import { useInterval } from "react-use"
-import { Servo } from "../types";
-import { p } from "framer-motion/client";
-import { Button } from "@nextui-org/button";
+import { ServoWithName } from "../types";
+import EditableLabel from "./editable-label";
 
 interface ServoInputProps {
-  servo: Servo
+  servo: ServoWithName
   index: number
-  onChange: (index: number, servo: Servo) => boolean
+  onChange: (index: number, servo: ServoWithName) => boolean
+  displayChannel?: boolean
+  displayTestType?: boolean
+  displayMinMax?: boolean
+  displayPulseWidth?: boolean
+  displayName?: boolean
+  alwaysEnabled?: boolean
 }
 
 export default function ServoInput(props: ServoInputProps) {
@@ -22,7 +27,7 @@ export default function ServoInput(props: ServoInputProps) {
   const index = props.index;
   const fastSweepMilliseconds = 100;
 
-  const safeParentOnChange = (newServo : Servo): boolean => {
+  const safeParentOnChange = (newServo : ServoWithName): boolean => {
     if (parentOnChange && (typeof parentOnChange === 'function')) {
       return parentOnChange(index, newServo)
     } else {
@@ -41,7 +46,7 @@ export default function ServoInput(props: ServoInputProps) {
 
   const onMinPulseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMinPulse = Number(e.target.value)
-    let newServo: Servo
+    let newServo: ServoWithName
     if (newMinPulse > pulseWidth) {
       newServo = {...servo, minPulse: newMinPulse, pulseWidth: newMinPulse}
     } else {
@@ -52,7 +57,7 @@ export default function ServoInput(props: ServoInputProps) {
 
   const onMaxPulseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMaxPulse = Number(e.target.value)
-    let newServo: Servo
+    let newServo: ServoWithName
     if ( pulseWidth > newMaxPulse) {
       newServo = {...servo, maxPulse: newMaxPulse, pulseWidth: newMaxPulse}
     } else {
@@ -80,7 +85,7 @@ export default function ServoInput(props: ServoInputProps) {
     } else if (e.target.value === 'fast-sweep') {
       const currentPulseWidth = servo.pulseWidth;
       if (maxPulse - minPulse < fastSweepMilliseconds) {
-        console.log(`Fast sweep is not possible. Range too small: ${maxPulse - minPulse}ms`);
+        console.log(`Fast sweep is not possible. Range too small: ${maxPulse - minPulse}\u00B5s`);
         setTestType('none');
         return;
       }
@@ -197,35 +202,50 @@ export default function ServoInput(props: ServoInputProps) {
   } else if (testType.startsWith('sweep-points-')) {
     testTypeSelected = 'sweep-points';
   }
-    
+
   return (
-    <div className="flex">
-      <div>
-        <input type="range" id="channel" min="-1" max="31" value={channel} onChange={onChannelChange} step="1" />
-        <label htmlFor="channel">Channel {channel} </label>
-      </div>
-      <div>
-        <input type="range" id="min-position" min="0" max={maxPulse - 1} value={minPulse} onChange={onMinPulseChange} disabled={channel == -1}/>
-        <label htmlFor="min-position">Min {minPulse}ms</label>
-      </div>
-      <div>
-        <input type="range" id="max-position" min={minPulse + 1} max="2500" value={maxPulse} onChange={onMaxPulseChange} disabled={channel == -1}/>
-        <label htmlFor="max-position">Max {maxPulse}ms</label>
-      </div>
-      <div>
-        <input type="range" id="servo-position" min={minPulse} max={maxPulse} value={pulseWidth} step="1" onChange={onPulseWidthChange}  disabled={channel == -1}/>
-        <label htmlFor="servo-position">Position {pulseWidth}ms</label>
-      </div>
-      <select id='test-type' name='test-type' value={testTypeSelected} onChange={onTestTypeChange} disabled={channel === -1}>
-        <option value='none'>None</option>
-        <option value='sweep-points'>Sweep points</option>
-        <option value='sweep'>Sweep</option>
-        <option value='fast-sweep'>Fast Sweep</option>
-        <option value='random'>Random</option>
-        <option value='min'>Min</option>
-        <option value='mid'>Mid</option>
-        <option value='max'>Max</option>
-      </select>
+    <div className="flex gap-2">
+      {props.displayName && 
+        <div className="flex-auto w-32">
+          <EditableLabel initialValue={servo.name ? servo.name : "UNNAMED"} onSave={(newName) => safeParentOnChange({...servo, name: newName})} />
+        </div>
+      }
+      {props.displayChannel && 
+        <div className="grid justify-items-center">
+          <input type="number" id="channel" min="-1" max="31" value={channel} onChange={onChannelChange} step="1" />
+          <label htmlFor="channel">Channel</label>
+        </div>
+      }
+      {props.displayMinMax &&
+        <>
+          <div>
+            <input type="range" id="min-position" min="0" max={maxPulse - 1} value={minPulse} onChange={onMinPulseChange} disabled={channel == -1 && !props.alwaysEnabled}/>
+            <label htmlFor="min-position">Min {minPulse}&micro;s</label>
+          </div>
+          <div>
+            <input type="range" id="max-position" min={minPulse + 1} max="2500" value={maxPulse} onChange={onMaxPulseChange} disabled={channel == -1 && !props.alwaysEnabled}/>
+            <label htmlFor="max-position">Max {maxPulse}&micro;s</label>
+          </div>
+        </>
+      }
+      {props.displayPulseWidth &&
+        <div>
+          <input type="range" id="servo-position" min={minPulse} max={maxPulse} value={pulseWidth} step="1" onChange={onPulseWidthChange}  disabled={channel == -1 && !props.alwaysEnabled}/>
+          <label htmlFor="servo-position">Position {pulseWidth}&micro;s</label>
+        </div>
+      }
+      {props.displayTestType &&
+        <select id='test-type' name='test-type' value={testTypeSelected} onChange={onTestTypeChange} disabled={channel === -1 && !props.alwaysEnabled}>
+          <option value='none'>None</option>
+          <option value='sweep-points'>Sweep points</option>
+          <option value='sweep'>Sweep</option>
+          <option value='fast-sweep'>Fast Sweep</option>
+          <option value='random'>Random</option>
+          <option value='min'>Min</option>
+          <option value='mid'>Mid</option>
+          <option value='max'>Max</option>
+        </select>
+      }
     </div>
   );  
 }

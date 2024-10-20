@@ -25,7 +25,7 @@ export default function WebSerialConditional(props: WebSerialConditionalProps) {
   // if Web Serial is supported
   serialContext.connected ? props.children : 
   ( // Web Serial is supported but not connected
-    <div>Please connect to a servo controller on the right (click on &quot;Not Connected&quot;) {getStartedMessage}</div>
+    <div>Please connect to a servo controller on the left (click on &quot;Not Connected&quot;) {getStartedMessage}</div>
   ) : ( // below is rendered if Web Serial is not supported
     <div id="notSupported">
       Sorry, <b>Web Serial</b> is not supported on this device, make sure you&apos;re running

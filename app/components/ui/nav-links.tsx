@@ -1,8 +1,12 @@
 import {
   HomeIcon,
-  ChartBarIcon,
-  MicrophoneIcon,
   CogIcon,
+  MicrophoneIcon,
+  AdjustmentsHorizontalIcon,
+  FolderArrowDownIcon,
+  CursorArrowRippleIcon,
+  BeakerIcon,
+  WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
@@ -13,10 +17,13 @@ const links = [
   {
     name: 'Servo Calibration',
     href: '/servo',
-    icon: ChartBarIcon,
+    icon: WrenchScrewdriverIcon,
   },
   { name: 'Lip Sync', href: '/lip-sync', icon: MicrophoneIcon },
+  { name: 'Record Motion', href: '/motion', icon: CursorArrowRippleIcon},
+  { name: 'Show Sequence', href: '/show-sequence', icon: AdjustmentsHorizontalIcon},
   { name: 'Settings', href: '/settings', icon: CogIcon },
+  { name: 'Export', href: '/export', icon: FolderArrowDownIcon },
 ];
 
 export default function NavLinks() {

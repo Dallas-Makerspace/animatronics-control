@@ -16,7 +16,7 @@
 import { AmplitudeTypes, ServoSequence, ServoSequenceOptions, ServoSequenceStats, SimpleEvent } from "../types";
 import { sortMapByValues } from "./general";
 
-// TODO: Include source for these functions (link)
+// Based on https://css-tricks.com/making-an-audio-waveform-visualizer-with-vanilla-javascript/
 
 // Set up audio context
 // (window as any).AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
@@ -95,7 +95,7 @@ export const billServoSequenceOptions: ServoSequenceOptions = {
 /**
  * Default options for generating a servo sequence
  */
-export const defaultServoSequenceOptions: ServoSequenceOptions = billServoSequenceOptions
+export const defaultServoSequenceOptions: ServoSequenceOptions = nativeDefaultServoSequenceOptions; // = billServoSequenceOptions
 
 /**
  * Generates a servo sequence from the filtered audio data. Uses the sample size to determine the time of each event
@@ -106,6 +106,7 @@ export const defaultServoSequenceOptions: ServoSequenceOptions = billServoSequen
 export const generateServoSequence = (filteredData: Array<number>, options: ServoSequenceOptions): ServoSequence => {
   const servoSequence: Array<SimpleEvent> = [];
   let time = 0;
+  console.log(`ServoControls START re-rendering servo sequence. There are ${filteredData.length} samples. Options: ${JSON.stringify(options, null, 2)}`);
   const servoRange = options.servoRange ? options.servoRange : options.servoCeiling - options.servoFloor;
   const verboseDebugging = options.verboseDebugging || false;
   const verboseError = options.verboseError || false;

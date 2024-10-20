@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { normalizeData } from "../utils/audio-functions";
 
+const verboseDebug = false;
+
 /**
  * Draws the audio file into a canvas element.
  * @param {HTMLCanvasElement} canvas the canvas element
@@ -81,7 +83,7 @@ export default function AmplitudeCanvas(props: AmplitudeCanvasProps): JSX.Elemen
   const haveData = props.filterData ? props.filterData.length > 0 : false;
 
   
-  console.log("AmplitudeCanvas rendering");
+  verboseDebug && console.log("AmplitudeCanvas rendering");
   if (canvas && canvasContext) {
     console.log("ADAM: IT WAS SET"); // TODO: This is always false?
     console.log("Clearing canvas");
@@ -90,7 +92,7 @@ export default function AmplitudeCanvas(props: AmplitudeCanvasProps): JSX.Elemen
     console.log(`Canvas width: ${width}, height: ${height}`);
     (canvasContext as CanvasRenderingContext2D).clearRect(0, 0, width, height);
   } else {
-    console.log("No canvas or canvas context");
+    verboseDebug && console.log("No canvas or canvas context");
   }
   return haveData ? (
     <div>

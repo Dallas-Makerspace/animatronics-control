@@ -3,10 +3,9 @@
  */
 import Link from 'next/link';
 import Image from 'next/image';
-import NavLinks from '@/app/components/nav-links';
+import NavLinks from '@/app/components/ui/nav-links';
 import Logo from '@/app/components/logo';
-import { PowerIcon } from '@heroicons/react/24/outline';
-import SerialStatus from './serial-status';
+import SerialStatus from '../serial-status';
 
 export default function SideNav() {
   return (

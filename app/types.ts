@@ -1,13 +1,40 @@
 /** Definition of a servo */
-export interface Servo{
+export interface Servo {
   /** The channel (id) of this servo */
   channel: number
-  /** The minimum pulse sent to this servo, in milliseconds */
+  /** The minimum pulse sent to this servo, in microseconds */
   minPulse: number
-  /** The maximum pulse sent to this servo, in milliseconds */
+  /** The maximum pulse sent to this servo, in microseconds */
   maxPulse: number
-  /** The current pulse sent to this servo, in milliseconds */
+  /** The current pulse sent to this servo, in microseconds */
   pulseWidth: number
+}
+
+export interface ServoSettings {
+  /** The name of these settings */
+  name: string
+  /** The channel (id) of this servo */
+  channel: number
+  /** The minimum pulse sent to this servo, in microseconds */
+  minPulse: number
+  /** The maximum pulse sent to this servo, in microseconds */
+  maxPulse: number
+}
+
+export interface ServoWithName extends Servo, ServoSettings {}
+
+export const getNewServoSettings = (index: number = 0): ServoSettings => {
+  const servo: ServoSettings = {
+    name: `Servo ${index}`,
+    channel: -1,
+    minPulse: 0,
+    maxPulse: 2000,
+  };
+  return servo;
+};
+
+export const getNewNamedServo = (index: number = 0): ServoWithName => {
+  return {...getNewServoSettings(index), pulseWidth: 1000 } as ServoWithName;
 }
 
 export interface ShowSequence {
@@ -71,7 +98,7 @@ export interface ServoSequenceOptions {
  servoCeiling: number;
  /** The minimum pulse width offset for the servo (for no sound amplitude) */
  servoFloor: number;
- /** The range of the servo in ms (if not set, this will be servoCeiling - servoFloor) */
+ /** The range of the servo in µs (if not set, this will be servoCeiling - servoFloor) */
  servoRange?: number;
  /** Should we apply a random boost to the servo */
  servoRandomBoost: boolean;
@@ -108,4 +135,32 @@ export interface ServoSequence{
   options?: ServoSequenceOptions;
   //** the statistics gathered while generating this sequence */
   stats?: ServoSequenceStats;
+}
+
+export const getNewServoSequence = (): ServoSequence => {
+  return {
+    sequence: [],
+  }
+}
+
+/**
+ * 
+ */
+export interface FileOutput {
+  /** The type of this file's structure */
+  fileType: "servo-settings" | "servo-sequence" | "servo-show";
+  schemaVersion: string;
+  data: any;
+}
+
+export interface ServoSettingsFileOutput extends FileOutput {
+  fileType: "servo-settings";
+  schemaVersion: "1.0";
+  data: Array<ServoSettings>;
+}
+
+export interface ServoSequenceFileOutput extends FileOutput {
+  fileType: "servo-sequence";
+  schemaVersion: "0.1";
+  data: ServoSequence;
 }

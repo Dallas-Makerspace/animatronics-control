@@ -76,8 +76,8 @@ export default function AudioFilePicker(props: AudioFilePickerProps) {
   return (
     <>
       <form>
-        <label htmlFor="audio">Upload an audio file:</label>
-        <input type="file" name="audio" accept="audio/*" onChange={handleAudioFileChange} />
+        <label htmlFor="audioFile">Upload an audio file:</label>
+        <input id="audioFile" type="file" name="audio" accept="audio/*" onChange={handleAudioFileChange} />
         <label htmlFor="fileSize">Size:</label>{" "}
         <output id="fileSize">n/a</output>
       </form>

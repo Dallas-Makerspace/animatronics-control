@@ -1,8 +1,9 @@
 'use client';
 
 import React, { createContext, useEffect, useState } from 'react';
-import { ServoSettings } from '../types';
+import { ServoSequenceOptions, ServoSettings } from '../types';
 import { jsonToMap, mapToJson } from '../utils/general';
+import { defaultServoSequenceOptions } from '../utils/audio-functions';
 const verboseDebug = false;
 
 /** Prefix applied to local storage keys */
@@ -17,6 +18,8 @@ export interface SettingsContextType {
   getServoSettings: (servoName: string) => ServoSettings;
   setServoSettings: (settings: ServoSettings) => void;
   removeServoSettings: (name: string) => void;
+  setLipSyncSettings(servoSequenceOptions: ServoSequenceOptions, servoSettingsName: string): void;
+  getLipSyncSettings(servoSettingsName: string): ServoSequenceOptions;
   saveSettingsToLocalStorage: () => void;
 }
 
@@ -45,6 +48,12 @@ const defaultSettingsContext: SettingsContextType = {
   },
   removeServoSettings: (_: string) => {
     throw new Error('Settings context not provided before calling removeServoSettings');
+  },
+  setLipSyncSettings: (_: ServoSequenceOptions, __: string) => {
+    throw new Error('Settings context not provided before calling saveLipSyncSettings');
+  },
+  getLipSyncSettings: (_: string) => {
+    throw new Error('Settings context not provided before calling getLipSyncSettings');
   },
   saveSettingsToLocalStorage: () => {
     throw new Error('Settings context not provided before calling saveSettingsToLocalStorage');
@@ -80,8 +89,26 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       return new Map<string, ServoSettings>();
     }
   }
+
+  /**
+   * Get the initial state of the lip sync settings from local storage.
+   * @returns The initial state of the lip sync settings.
+   */
+  const getInitialLipSyncSettings = (): Map<string, ServoSequenceOptions> => {
+    const lipSyncSettings = (typeof window !== 'undefined') ?
+      localStorage ? localStorage.getItem(`${localStorageKey}-lipSyncSettings`) : null
+      : null // if window is not defined, return null
+    if (lipSyncSettings) {
+      setInitialized(true);
+      return jsonToMap(lipSyncSettings);
+    } else {
+      return new Map<string, ServoSequenceOptions>();
+    }
+  }
+
   
   const [servoSettings, setServoSettingsState] = useState<Map<string, ServoSettings>>(getInitialServoSettings);
+  const [lipSyncSettings, setLipSyncSettingsState] = useState<Map<string, ServoSequenceOptions>>(getInitialLipSyncSettings);
   
   useEffect(() => {
     if (!initialized) {
@@ -92,6 +119,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setServoSettingsState(servoSettingsMap);
         setServoSettingsNames(Array.from(servoSettingsMap.keys()));
       }
+      console.log('Initializing lip sync settings from local storage in SettingsProvider useEffect');
+      const lipSyncSettingsJSON = localStorage.getItem(`${localStorageKey}-lipSyncSettings`);
+      if (lipSyncSettingsJSON) {
+        const lipSyncSettingsMap = jsonToMap(lipSyncSettingsJSON);
+        setLipSyncSettingsState(lipSyncSettingsMap);
+      }
       setInitialized(true);
     }
   }, [initialized]);
@@ -101,7 +134,10 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const servoSettingsJSON = mapToJson(servoSettings);
     localStorage.setItem(`${localStorageKey}-servoSettings`, servoSettingsJSON);
     console.log('Saved all servo settings to local storage');
-    setServoSettingsState(new Map(servoSettings)); // trigger a re-render by changing the state (compared by reference)    
+    const lipSyncSettingsJSON = mapToJson(lipSyncSettings);
+    localStorage.setItem(`${localStorageKey}-lipSyncSettings`,lipSyncSettingsJSON);
+    console.log('Saved all lip sync settings to local storage');
+    setServoSettingsState(new Map(servoSettings)); // trigger a re-render by changing the state (compared by reference)
   }
 
   const myContext: SettingsContextType = {
@@ -133,6 +169,20 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       verboseDebug && console.log(`Removing servo settings for ${name}`);
       servoSettings.delete(name);
       saveSettingsToLocalStorage();
+    },
+    setLipSyncSettings: (servoSequenceOptions: ServoSequenceOptions, servoSettingsName: string) => {
+      verboseDebug && console.log(`Saving servo sequence options (saveLipSyncSettings) for ${servoSettingsName}`);
+      lipSyncSettings.set(servoSettingsName, servoSequenceOptions);
+      saveSettingsToLocalStorage();
+    },
+    getLipSyncSettings: (servoSettingsName:string ) => {
+      /* verboseDebug && */ console.log(`Getting servo sequence options for ${servoSettingsName}`);
+      const servoSequenceOptions = lipSyncSettings.get(servoSettingsName);
+      if (!servoSequenceOptions) {
+        console.error(`No lip sync settings found for servo ${servoSettingsName}`);
+        return defaultServoSequenceOptions;
+      }
+      return servoSequenceOptions;
     },
     saveSettingsToLocalStorage
   };

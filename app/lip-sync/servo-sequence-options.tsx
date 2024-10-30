@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RandomBoostRangeTypes, ServoSequenceOptions } from "../types";
 import { Tooltip } from "@nextui-org/react";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
@@ -10,6 +10,10 @@ export interface ServoSequenceOptionsProps {
 export default function ServoSequenceOptionsComponent(props: ServoSequenceOptionsProps): JSX.Element {
   const [options, setOptions] = useState<ServoSequenceOptions>(props.servoSequenceOptions);
   const [onChange] = useState<(options: ServoSequenceOptions) => void>(() => props.onChange);
+
+  useEffect(() => {
+    setOptions(props.servoSequenceOptions);
+  }, [props.servoSequenceOptions]);
 
   const updateOptions = (newOptions: ServoSequenceOptions) => {
     setOptions(newOptions);
@@ -107,18 +111,20 @@ export default function ServoSequenceOptionsComponent(props: ServoSequenceOption
         </label>
       </div> */}
       <div className="grid gap-2">
-        <label>
-          Servo Random Boost:
-          <input type="checkbox" checked={options.servoRandomBoost} onChange={(e) => updateOptions({...options, servoRandomBoost: e.target.checked})} />
-        </label>
-        <Tooltip 
-          showArrow 
-          placement="right"
-          content="I am a tooltip"
-          classNames={tooltipClassNames}
-        >
-          <InformationCircleIcon className="w-6" color="primary"/>
-        </Tooltip>        
+        <div className="flex gap-2">
+          <label>
+            Servo Random Boost:
+            <input type="checkbox" checked={options.servoRandomBoost} onChange={(e) => updateOptions({...options, servoRandomBoost: e.target.checked})} />
+          </label>
+          <Tooltip 
+            showArrow 
+            placement="right"
+            content="I am a tooltip"
+            classNames={tooltipClassNames}
+          >
+            <InformationCircleIcon className="w-6" color="primary"/>
+          </Tooltip>
+        </div>
         { options.servoRandomBoost && (
           <div className="flex gap-2">
             <label>

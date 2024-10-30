@@ -62,6 +62,7 @@ export default function SavedServoSettingsPicker(props: SavedServoSettingsPicker
       variant="bordered"
       placeholder="Select a saved servo settings"
       className="max-w-xs"
+      size="lg"
       onChange={handleSavedServoSettingsSelectChange}
       selectedKeys={[savedServoSettingsSelectValue]}
     >

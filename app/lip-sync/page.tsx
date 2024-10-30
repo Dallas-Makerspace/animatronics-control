@@ -13,6 +13,7 @@ import SerialContext from "../contexts/serial";
 import { Button } from "@nextui-org/button";
 import SavedServoSettingsPicker from "../components/saved-servo-settings-picker";
 import { DownloadButton } from "../components/download-button";
+import SettingsContext from "../contexts/settings";
 
 // interface LipSyncPageProps {
 //   filteredData: Array<number>;
@@ -38,6 +39,7 @@ export default function LipSyncPage() {
 
   const [playbackStarted, setPlaybackStarted] = useState<number>(-1);
   const serialContext = useContext(SerialContext);
+  const settingsContext = useContext(SettingsContext);
 
   const onAudioFileChange = (newSource: string) => {
     const audioContext = new OfflineAudioContext({
@@ -87,6 +89,9 @@ export default function LipSyncPage() {
       const pulseWidth = servoSequence.sequence[index].pulseWidth;
       const sinceStart = servoSequence.sequence[index].sinceStart;
       let nextIndex = index + 1;
+      if(sinceStart % 1000 === 0) { // every second
+        console.log(`Playing servo event ${index} at ${sinceStart}ms with pulse width ${pulseWidth}μs`);
+      }
       if(sinceStart % 10000 === 0) { // every 10 seconds
         const now = Date.now();
         const elapsed = now - playbackStarted;
@@ -155,9 +160,9 @@ export default function LipSyncPage() {
       if(servoSettingsName != "") {
         setServoSettingsName(""); // clear the servo settings name if we change anything other than the channel
       }
-      const newServoSequenceOptions = {...servoSequenceOptions, servoFloor: newServo.minPulse, servoCeiling: newServo.maxPulse};
-      setServoSequenceOptions(newServoSequenceOptions);
     }
+    const newServoSequenceOptions = {...servoSequenceOptions, servoFloor: newServo.minPulse, servoCeiling: newServo.maxPulse};
+    setServoSequenceOptions(newServoSequenceOptions);
     return true;
   }
 
@@ -171,8 +176,22 @@ export default function LipSyncPage() {
   }
 
   const loadServoSettings = (servoSettings: ServoWithName) => {
+    console.log(`Loading servo settings for ${servoSettings.name}`);
     setServoSettingsName(servoSettings.name);
-    changeServo(-1, servoSettings)
+    console.log(`Will load servo sequence options for ${servoSettings.name}`);
+    const newServoSequenceOptions = settingsContext.getLipSyncSettings(servoSettings.name);
+    console.log('ADAM', newServoSequenceOptions);
+    setServoSequenceOptions(newServoSequenceOptions);
+    changeServo(-1, servoSettings); // do this last so servoSequenceOptions is updated with servo settings (floor/ceiling)
+  }
+
+  function saveLipSyncSettings(): void {
+    if (servoSettingsName === "") {
+      console.error("No servo settings name to save");
+      return;
+    }
+    console.log(`Saving servo sequence options for ${servoSettingsName}`);
+    settingsContext.setLipSyncSettings(servoSequenceOptions, servoSettingsName);
   }
 
   return (
@@ -201,7 +220,19 @@ export default function LipSyncPage() {
           alwaysEnabled
         />
       </div>
-      <SavedServoSettingsPicker onSavedServoSettingsSelect={loadServoSettings} />
+      <div className="flex gap-4">
+        <SavedServoSettingsPicker onSavedServoSettingsSelect={loadServoSettings} />
+        <b>{servoSettingsName}</b>
+        {servoSettingsName != "" &&
+          (<Button onClick={saveLipSyncSettings}>
+            Save Settings
+          </Button>)
+        }
+        <Button onClick={() => setServoSequenceOptions({...defaultServoSequenceOptions}) }>
+          Reset Settings
+        </Button>
+      </div>
+
       <div className="flex gap-4" />
       <div className="flex">
         <WebSerialConditional getStartedMessage="to play this lip sync on a servo.">
